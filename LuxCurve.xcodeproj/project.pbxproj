@@ -1,0 +1,388 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		0B0B0B0B0B0B0B0B0B0B0B0B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A0A0A0A0A0A0A0A0A0A0A01 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0A0A0A0A0A0A0A0A0A0A0A05;
+			remoteInfo = LuxCurve;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0A0A0A0A0A0A0A0A0A0A0A06 /* LuxCurve.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LuxCurve.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B0B0B0B0B0B0B0B0B0B0B02 /* LuxCurveTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LuxCurveTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0A0A0A0A0A0A0A0A0A0A0A04 /* LuxCurve */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LuxCurve;
+			sourceTree = "<group>";
+		};
+		0B0B0B0B0B0B0B0B0B0B0B03 /* LuxCurveTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LuxCurveTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0A0A0A0A0A0A0A0A0A0A0A08 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0B0B0B0B0B0B0B0B0B0B0B05 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0A0A0A0A0A0A0A0A0A0A0A02 = {
+			isa = PBXGroup;
+			children = (
+				0A0A0A0A0A0A0A0A0A0A0A04 /* LuxCurve */,
+				0A0A0A0A0A0A0A0A0A0A0A03 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0A0A0A0A0A0A0A0A0A0A0A03 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0A0A0A0A0A0A0A0A0A0A0A06 /* LuxCurve.app */,
+				0B0B0B0B0B0B0B0B0B0B0B02 /* LuxCurveTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0A0A0A0A0A0A0A0A0A0A0A05 /* LuxCurve */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A0A0A0A0A0A0A0A0A0A0A0B /* Build configuration list for PBXNativeTarget "LuxCurve" */;
+			buildPhases = (
+				0A0A0A0A0A0A0A0A0A0A0A07 /* Sources */,
+				0A0A0A0A0A0A0A0A0A0A0A08 /* Frameworks */,
+				0A0A0A0A0A0A0A0A0A0A0A09 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0A0A0A0A0A0A0A0A0A0A0A04 /* LuxCurve */,
+			);
+			name = LuxCurve;
+			productName = LuxCurve;
+			productReference = 0A0A0A0A0A0A0A0A0A0A0A06 /* LuxCurve.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0B0B0B0B0B0B0B0B0B0B0B01 /* LuxCurveTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B0B0B0B0B0B0B0B0B0B0B09 /* Build configuration list for PBXNativeTarget "LuxCurveTests" */;
+			buildPhases = (
+				0B0B0B0B0B0B0B0B0B0B0B04 /* Sources */,
+				0B0B0B0B0B0B0B0B0B0B0B05 /* Frameworks */,
+				0B0B0B0B0B0B0B0B0B0B0B06 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0B0B0B0B0B0B0B0B0B0B0B0A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0B0B0B0B0B0B0B0B0B0B0B03 /* LuxCurveTests */,
+			);
+			name = LuxCurveTests;
+			productName = LuxCurveTests;
+			productReference = 0B0B0B0B0B0B0B0B0B0B0B02 /* LuxCurveTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0A0A0A0A0A0A0A0A0A0A0A01 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1740;
+				LastUpgradeCheck = 1740;
+				TargetAttributes = {
+					0A0A0A0A0A0A0A0A0A0A0A05 = {
+						CreatedOnToolsVersion = 17.0;
+					};
+					0B0B0B0B0B0B0B0B0B0B0B01 = {
+						CreatedOnToolsVersion = 17.0;
+						TestTargetID = 0A0A0A0A0A0A0A0A0A0A0A05;
+					};
+				};
+			};
+			buildConfigurationList = 0A0A0A0A0A0A0A0A0A0A0A0A /* Build configuration list for PBXProject "LuxCurve" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0A0A0A0A0A0A0A0A0A0A0A02;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0A0A0A0A0A0A0A0A0A0A0A03 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0A0A0A0A0A0A0A0A0A0A0A05 /* LuxCurve */,
+				0B0B0B0B0B0B0B0B0B0B0B01 /* LuxCurveTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXTargetDependency section */
+		0B0B0B0B0B0B0B0B0B0B0B0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0A0A0A0A0A0A0A0A0A0A0A05 /* LuxCurve */;
+			targetProxy = 0B0B0B0B0B0B0B0B0B0B0B0B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0A0A0A0A0A0A0A0A0A0A0A09 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0B0B0B0B0B0B0B0B0B0B0B06 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0A0A0A0A0A0A0A0A0A0A0A07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0B0B0B0B0B0B0B0B0B0B0B04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0A0A0A0A0A0A0A0A0A0A0A0C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		0A0A0A0A0A0A0A0A0A0A0A0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		0A0A0A0A0A0A0A0A0A0A0A0E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/System/Library/PrivateFrameworks,
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					IOKit,
+					"-framework",
+					CoreGraphics,
+					"-framework",
+					DisplayServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.luxcurve.LuxCurve;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "LuxCurve/LuxCurve-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0A0A0A0A0A0A0A0A0A0A0A0F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/System/Library/PrivateFrameworks,
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					IOKit,
+					"-framework",
+					CoreGraphics,
+					"-framework",
+					DisplayServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.luxcurve.LuxCurve;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "LuxCurve/LuxCurve-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		0B0B0B0B0B0B0B0B0B0B0B07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.luxcurve.LuxCurveTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LuxCurve.app/Contents/MacOS/LuxCurve";
+			};
+			name = Debug;
+		};
+		0B0B0B0B0B0B0B0B0B0B0B08 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.luxcurve.LuxCurveTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LuxCurve.app/Contents/MacOS/LuxCurve";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0A0A0A0A0A0A0A0A0A0A0A0A /* Build configuration list for PBXProject "LuxCurve" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0A0A0A0A0A0A0A0A0A0A0C /* Debug */,
+				0A0A0A0A0A0A0A0A0A0A0A0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0A0A0A0A0A0A0A0A0A0A0B /* Build configuration list for PBXNativeTarget "LuxCurve" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0A0A0A0A0A0A0A0A0A0A0E /* Debug */,
+				0A0A0A0A0A0A0A0A0A0A0A0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0B0B0B0B0B0B0B0B0B0B0B09 /* Build configuration list for PBXNativeTarget "LuxCurveTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B0B0B0B0B0B0B0B0B0B0B07 /* Debug */,
+				0B0B0B0B0B0B0B0B0B0B0B08 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0A0A0A0A0A0A0A0A0A0A0A01 /* Project object */;
+}
