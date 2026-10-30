@@ -35,7 +35,12 @@ final class ConfigManager {
         }
         do {
             let data = try Data(contentsOf: fileURL)
-            return try decoder.decode(AppConfig.self, from: data)
+            var config = try decoder.decode(AppConfig.self, from: data)
+            // Missing keys have already fallen back to defaults during decoding.
+            // Migrations that depend on `config.version` belong here, before the
+            // version is raised to the current schema.
+            config.version = AppConfig.currentVersion
+            return config
         } catch {
             // Preserve the user's calibration on a parse error by moving the
             // file aside so it can be recovered, rather than discarding it.

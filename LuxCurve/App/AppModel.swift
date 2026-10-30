@@ -60,10 +60,12 @@ final class AppModel: ObservableObject {
     /// Record an explicit calibration point (from the wizard's Save button). Saves
     /// the brightness point and, when provided, a warmth point at the same lighting.
     /// Calibrating a warmth point turns adaptive warmth on so the user sees it work.
+    /// `brightness` is the value on screen, so it is stored as a baseline (see
+    /// `baseline(forApplied:)`) and the screen stays where the user left it.
     func saveCalibrationPoint(lux: Double, brightness: Double, warmth: Double? = nil) {
-        config.curve.upsert(CalibrationNode(lux: lux, brightness: brightness))
+        config.curve.upsert(CalibrationNode(lux: lux, brightness: baseline(forApplied: brightness)))
         if let warmth, canControlWarmth {
-            config.warmthCurve.upsert(CalibrationNode(lux: lux, brightness: warmth))
+            config.warmthCurve.upsert(CalibrationNode(lux: lux, brightness: warmth), risesWithLux: false)
             config.warmthEnabled = true
         }
         persist()
@@ -73,8 +75,9 @@ final class AppModel: ObservableObject {
 
     /// Record a point learned from a manual brightness adjustment. The daemon only
     /// calls this once the user has *settled* on a value (it debounces the live
-    /// adjustment), so this is a deliberate-ish choice. It's collected as a
-    /// `.learned` point alongside any explicit calibration.
+    /// adjustment), so this is a deliberate choice. It's stored as a `.learned`
+    /// point and, like a wizard point, takes precedence over older points that
+    /// contradict it.
     ///
     /// The applied brightness already includes the overall scale and any circadian
     /// dimming, so we divide those out and store the baseline value — that way the
@@ -82,12 +85,17 @@ final class AppModel: ObservableObject {
     /// actually chose, and the curve stays a clean lux→brightness mapping.
     func learn(lux: Double, brightness: Double) {
         guard config.learnFromAdjustments else { return }
-        let circadian = config.circadianEnabled ? Circadian.scale(for: Date()) : 1.0
-        let factor = config.brightnessScale * circadian
-        let baseline = factor > 0 ? brightness / factor : brightness
-        config.curve.upsert(CalibrationNode(lux: lux, brightness: baseline, source: .learned))
+        config.curve.upsert(CalibrationNode(lux: lux, brightness: baseline(forApplied: brightness),
+                                            source: .learned))
         persist()
         daemon.updateConfig(config)
+    }
+
+    /// Divide the current overall scale and time-of-day dimming out of an
+    /// on-screen brightness, giving the curve value that reproduces it now.
+    private func baseline(forApplied brightness: Double) -> Double {
+        let factor = config.brightnessFactor()
+        return factor > 0 ? brightness / factor : brightness
     }
 
     var learnsFromAdjustments: Bool { config.learnFromAdjustments }

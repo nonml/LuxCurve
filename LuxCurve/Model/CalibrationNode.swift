@@ -11,10 +11,9 @@ import Foundation
 
 struct CalibrationNode: Codable, Equatable, Identifiable {
 
-    /// How a point came to exist. Deliberate wizard calibration is trusted more
-    /// than a point inferred from an ambient brightness nudge, so a `.learned`
-    /// point is never allowed to overwrite an `.explicit` one (see
-    /// `CalibrationCurve.upsert`).
+    /// How a point came to exist, shown in the calibration-points window. Both
+    /// kinds are weighted equally: the most recent point at a given lighting
+    /// wins (see `CalibrationCurve.upsert`).
     enum Source: String, Codable {
         case explicit   // saved from the calibration wizard
         case learned    // inferred from a manual brightness adjustment

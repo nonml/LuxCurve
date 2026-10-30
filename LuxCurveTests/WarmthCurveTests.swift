@@ -59,12 +59,12 @@ final class WarmthCurveTests: XCTestCase {
         }
     }
 
-    func testWarmthClampedWhenPointsRiseWithLux() {
-        // A point that is warmer at a brighter lux must be clamped down, not honored.
+    func testWarmthPooledWhenPointsRiseWithLux() {
+        // A point that is warmer at a brighter lux is pooled with the earlier one,
+        // so the two meet at their mean and the curve stays non-increasing.
         let nodes = [node(10, 0.3), node(100, 0.8), node(1_000, 0.1)]
-        let mid = CurveEngine.warmth(forLux: 100, nodes: nodes)!
-        XCTAssertLessThanOrEqual(mid, 0.3 + 1e-9,
-                                 "a warmth point that rises with lux should be clamped to the running min")
+        XCTAssertEqual(CurveEngine.warmth(forLux: 10, nodes: nodes)!, 0.55, accuracy: 1e-9)
+        XCTAssertEqual(CurveEngine.warmth(forLux: 100, nodes: nodes)!, 0.55, accuracy: 1e-9)
     }
 
     func testStaysWithinRange() {

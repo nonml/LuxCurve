@@ -39,6 +39,14 @@ struct MenuBarView: View {
                 }
             }
 
+            if daemon.isHoldingAdjustment {
+                Label("Keeping your manual brightness until the lighting changes.",
+                      systemImage: "hand.raised")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Toggle("Adaptive brightness", isOn: Binding(
                 get: { model.isEnabled },
                 set: { model.setEnabled($0) }

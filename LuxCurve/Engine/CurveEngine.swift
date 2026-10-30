@@ -4,9 +4,12 @@
 //
 //  Maps an ambient lux reading to a target value (screen brightness, or color
 //  warmth) using the user's calibration nodes. Two guarantees:
-//    1. Monotonic: the interpolated value never reverses direction against lux
-//       (we clamp). For brightness this means it never dips as lux rises; warmth
-//       is handled as its complement so it never rises as lux rises.
+//    1. Monotonic: the interpolated value never reverses direction against lux.
+//       Points that violate the order are pooled to their mean (isotonic
+//       regression) rather than clamped to the highest earlier value, so a dim
+//       point is not overruled by a brighter one at lower lux. For brightness
+//       this means it never dips as lux rises; warmth is handled as its
+//       complement so it never rises as lux rises.
 //    2. Interpolated in log-lux space, because human light perception and the
 //       sensor's range are both roughly logarithmic — linear-in-lux would make
 //       the curve far too sensitive at the bright end.
@@ -109,19 +112,32 @@ enum CurveEngine {
         log10(max(0, lux) + 1)
     }
 
-    /// Clamp the value to be non-decreasing with lux, enforcing guarantee #1.
-    /// Input must already be sorted ascending by lux.
+    /// Make the values non-decreasing with lux, enforcing guarantee #1, using the
+    /// pool-adjacent-violators algorithm: each run of points that breaks the order
+    /// is replaced by its mean. This is the closest non-decreasing fit to the
+    /// input, so conflicting points meet in the middle instead of every dip being
+    /// raised to the running maximum. Input must already be sorted ascending by lux.
     static func monotonic(_ sorted: [Point]) -> [Point] {
-        var result: [Point] = []
-        result.reserveCapacity(sorted.count)
-        var runningMax = 0.0
-        for var point in sorted {
-            if point.value < runningMax {
-                point.value = runningMax
-            } else {
-                runningMax = point.value
+        // Each block covers `count` consecutive points sharing the value `mean`.
+        var blocks: [(mean: Double, count: Int)] = []
+        for point in sorted {
+            blocks.append((point.value, 1))
+            while blocks.count > 1, blocks[blocks.count - 2].mean > blocks[blocks.count - 1].mean {
+                let last = blocks.removeLast()
+                let prev = blocks.removeLast()
+                let count = prev.count + last.count
+                let mean = (prev.mean * Double(prev.count) + last.mean * Double(last.count)) / Double(count)
+                blocks.append((mean, count))
             }
-            result.append(point)
+        }
+
+        var result = sorted
+        var index = 0
+        for block in blocks {
+            for _ in 0..<block.count {
+                result[index].value = block.mean
+                index += 1
+            }
         }
         return result
     }

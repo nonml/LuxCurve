@@ -40,4 +40,13 @@ final class CircadianTests: XCTestCase {
             h += 0.1
         }
     }
+
+    func testBrightnessFactorCombinesScaleAndNightDimming() {
+        var config = AppConfig()
+        config.brightnessScale = 1.2
+        let midnight = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: Date())!
+        XCTAssertEqual(config.brightnessFactor(at: midnight), 1.2, accuracy: 1e-9)
+        config.circadianEnabled = true
+        XCTAssertEqual(config.brightnessFactor(at: midnight), 1.2 * Circadian.nightFloor, accuracy: 1e-9)
+    }
 }

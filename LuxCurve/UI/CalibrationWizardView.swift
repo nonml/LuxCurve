@@ -199,6 +199,7 @@ struct CalibrationWizardView: View {
             CurveGraph(nodes: model.config.curve.nodes,
                        minBrightness: model.config.minBrightness,
                        maxBrightness: model.config.maxBrightness,
+                       brightnessFactor: model.config.brightnessFactor(),
                        currentLux: daemon.smoothedLux,
                        chosenBrightness: sliderValue)
                 .frame(height: 96)
@@ -229,11 +230,31 @@ struct CalibrationWizardView: View {
                 }
             }
 
+            limitsNotice
+
             suggestion
 
             footer
         }
         .padding(20)
+    }
+
+    /// Explains that a value outside the Dimmest/Brightest limits will be clamped
+    /// once the window closes, so the screen changing afterward is expected.
+    @ViewBuilder
+    private var limitsNotice: some View {
+        let lo = model.config.minBrightness
+        let hi = model.config.maxBrightness
+        if sliderValue < lo - 0.005 || sliderValue > hi + 0.005 {
+            Label("This is outside your brightness limits (\(Int((lo * 100).rounded()))%–"
+                  + "\(Int((hi * 100).rounded()))%), so LuxCurve will keep the screen within them. "
+                  + "You can change the limits in Settings.",
+                  systemImage: "exclamationmark.circle")
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     /// A non-prescriptive starting point for the current lighting, plus a button

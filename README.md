@@ -58,7 +58,8 @@ first launch opens a short guided calibration.
   light, neutral in bright light — using the system Night Shift engine.
 - Applies the result to the built-in display.
 - Learns from manual brightness adjustments: an adjustment is recorded as a
-  calibration point for the current lighting.
+  calibration point for the current lighting, and the most recent choice for a
+  given lighting takes precedence over older points.
 - Suggests a sensible starting point for the current lighting (informed by lighting
   ergonomics and circadian research) that you then fine-tune by eye.
 - Settings (⌘,) let you tune responsiveness, an overall brightness level, and the

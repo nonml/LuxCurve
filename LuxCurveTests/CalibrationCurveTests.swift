@@ -3,7 +3,7 @@
 //  LuxCurveTests
 //
 //  Covers the storage rules: sorting, the relative-tolerance upsert dedupe, and
-//  the trust ordering between explicit (wizard) and learned (nudge) points.
+//  that the newest point wins over nearby or contradicting points.
 //
 
 import XCTest
@@ -34,29 +34,58 @@ final class CalibrationCurveTests: XCTestCase {
         XCTAssertEqual(curve.nodes.count, 2)
     }
 
-    func testLearnedIsKeptAlongsideNearbyExplicit() {
+    func testLearnedReplacesNearbyExplicit() {
         var curve = CalibrationCurve(nodes: [
             CalibrationNode(lux: 100, brightness: 0.5, source: .explicit)
         ])
-        curve.upsert(CalibrationNode(lux: 103, brightness: 0.9, source: .learned))
-        // The learned point is collected as its own data point; the explicit one
-        // is kept and never overwritten.
-        XCTAssertEqual(curve.nodes.count, 2)
-        let explicit = curve.nodes.first { $0.source == .explicit }
-        XCTAssertEqual(explicit?.brightness, 0.5, "explicit point must be preserved")
-        XCTAssertTrue(curve.nodes.contains { $0.source == .learned && $0.brightness == 0.9 })
+        curve.upsert(CalibrationNode(lux: 103, brightness: 0.3, source: .learned))
+        // The most recent choice at this lighting wins, whatever its source.
+        XCTAssertEqual(curve.nodes.count, 1)
+        XCTAssertEqual(curve.nodes[0].brightness, 0.3)
+        XCTAssertEqual(curve.nodes[0].source, .learned)
     }
 
-    func testLearnedReplacesNearbyLearnedButNotExplicit() {
+    func testDimmerPointRemovesBrighterPointsAtLowerLux() {
         var curve = CalibrationCurve(nodes: [
-            CalibrationNode(lux: 100, brightness: 0.5, source: .explicit),
-            CalibrationNode(lux: 101, brightness: 0.6, source: .learned),
+            CalibrationNode(lux: 10, brightness: 0.1),
+            CalibrationNode(lux: 50, brightness: 0.4),
+            CalibrationNode(lux: 1_000, brightness: 0.8),
         ])
-        // A new learned point near both replaces the learned one, keeps the explicit.
-        curve.upsert(CalibrationNode(lux: 102, brightness: 0.8, source: .learned))
-        XCTAssertEqual(curve.nodes.count, 2)
-        XCTAssertTrue(curve.nodes.contains { $0.source == .explicit && $0.brightness == 0.5 })
-        XCTAssertTrue(curve.nodes.contains { $0.source == .learned && $0.brightness == 0.8 })
+        // Dimming to 0.2 at 200 lux contradicts the 0.4 point at 50 lux.
+        curve.upsert(CalibrationNode(lux: 200, brightness: 0.2, source: .learned))
+        XCTAssertEqual(curve.nodes.map(\.lux), [10, 200, 1_000])
+        XCTAssertEqual(CurveEngine.brightness(forLux: 200, nodes: curve.nodes)!, 0.2, accuracy: 1e-9,
+                       "the curve must reproduce the value the user just chose")
+    }
+
+    func testBrighterPointRemovesDimmerPointsAtHigherLux() {
+        var curve = CalibrationCurve(nodes: [
+            CalibrationNode(lux: 10, brightness: 0.1),
+            CalibrationNode(lux: 500, brightness: 0.3),
+            CalibrationNode(lux: 5_000, brightness: 0.9),
+        ])
+        curve.upsert(CalibrationNode(lux: 100, brightness: 0.5, source: .learned))
+        XCTAssertEqual(curve.nodes.map(\.lux), [10, 100, 5_000])
+    }
+
+    func testWarmthUpsertRemovesPointsInReverseDirection() {
+        // Warmth falls as lux rises, so a cooler point at lower lux conflicts.
+        var curve = CalibrationCurve(nodes: [
+            CalibrationNode(lux: 10, brightness: 0.9),
+            CalibrationNode(lux: 50, brightness: 0.3),
+            CalibrationNode(lux: 1_000, brightness: 0.1),
+        ])
+        curve.upsert(CalibrationNode(lux: 200, brightness: 0.6), risesWithLux: false)
+        XCTAssertEqual(curve.nodes.map(\.lux), [10, 200, 1_000])
+    }
+
+    func testOrderedPointsAreKept() {
+        var curve = CalibrationCurve(nodes: [
+            CalibrationNode(lux: 10, brightness: 0.1),
+            CalibrationNode(lux: 1_000, brightness: 0.8),
+        ])
+        curve.upsert(CalibrationNode(lux: 100, brightness: 0.4, source: .learned))
+        XCTAssertEqual(curve.nodes.count, 3)
     }
 
     func testExplicitReplacesNearbyLearned() {

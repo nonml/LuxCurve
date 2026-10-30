@@ -57,12 +57,29 @@ final class CurveEngineTests: XCTestCase {
         }
     }
 
-    func testMonotonicEvenWhenNodesDip() {
-        // A node that dips below an earlier one must be clamped up, not honored.
+    func testDippingNodesArePooledToTheirMean() {
+        // A node that dips below an earlier one is pooled with it, so the two meet
+        // at their mean rather than the dip being raised to the earlier value.
         let nodes = [node(10, 0.6), node(100, 0.3), node(1_000, 0.9)]
-        let mid = CurveEngine.brightness(forLux: 100, nodes: nodes)!
-        XCTAssertGreaterThanOrEqual(mid, 0.6 - 1e-9,
-                                    "a dipping node should be clamped to the running max")
+        XCTAssertEqual(CurveEngine.brightness(forLux: 10, nodes: nodes)!, 0.45, accuracy: 1e-9)
+        XCTAssertEqual(CurveEngine.brightness(forLux: 100, nodes: nodes)!, 0.45, accuracy: 1e-9)
+        XCTAssertEqual(CurveEngine.brightness(forLux: 1_000, nodes: nodes)!, 0.9, accuracy: 1e-9)
+    }
+
+    func testPoolingMergesAcrossBlocks() {
+        // 0.5, 0.2 pool to 0.35; then 0.1 violates that block and all three pool.
+        let fitted = CurveEngine.monotonic([(1, 0.5), (2, 0.2), (3, 0.1), (4, 0.8)])
+        let values = fitted.map(\.value)
+        XCTAssertEqual(values[0], 0.8 / 3, accuracy: 1e-9)
+        XCTAssertEqual(values[1], 0.8 / 3, accuracy: 1e-9)
+        XCTAssertEqual(values[2], 0.8 / 3, accuracy: 1e-9)
+        XCTAssertEqual(values[3], 0.8, accuracy: 1e-9)
+        XCTAssertEqual(fitted.map(\.lux), [1, 2, 3, 4])
+    }
+
+    func testMonotonicLeavesOrderedPointsUnchanged() {
+        let points: [CurveEngine.Point] = [(1, 0.1), (2, 0.1), (3, 0.4)]
+        XCTAssertEqual(CurveEngine.monotonic(points).map(\.value), [0.1, 0.1, 0.4])
     }
 
     func testNoOvershootBetweenPoints() {

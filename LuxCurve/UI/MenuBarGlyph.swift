@@ -17,6 +17,14 @@ struct MenuBarGlyph: View {
 
     var body: some View {
         Image(systemName: symbolName)
+            .accessibilityLabel("LuxCurve")
+            .accessibilityValue(accessibilityValue)
+    }
+
+    private var accessibilityValue: String {
+        if !daemon.sensorAvailable { return "Light sensor unavailable" }
+        if !enabled { return "Off" }
+        return "Brightness \(Int((daemon.targetBrightness * 100).rounded())) percent"
     }
 
     private var symbolName: String {

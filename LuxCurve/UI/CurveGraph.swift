@@ -4,9 +4,10 @@
 //
 //  A small read-only plot of the user's comfort curve: brightness (y, 0...1)
 //  against ambient light (x, log-lux). It draws the same curve the daemon would
-//  follow (via CurveEngine, clamped to the safety rails) plus the user's recorded
-//  points, and — during calibration — a live marker showing where the point they
-//  are about to save will land.
+//  follow right now (via CurveEngine, times `brightnessFactor`, clamped to the
+//  safety rails) plus the user's recorded points on the same scale, and — during
+//  calibration — a live marker showing where the point they are about to save
+//  will land.
 //
 //  Purely presentational; it owns no state and does no IO.
 //
@@ -17,6 +18,10 @@ struct CurveGraph: View {
     let nodes: [CalibrationNode]
     let minBrightness: Double
     let maxBrightness: Double
+
+    /// Overall scale times any time-of-day dimming (`AppConfig.brightnessFactor`),
+    /// so the plot shows on-screen brightness rather than stored baseline values.
+    var brightnessFactor: Double = 1
 
     /// Live calibration overlay. When `currentLux` is non-nil a vertical "now"
     /// guide is drawn; when `chosenBrightness` is also non-nil, the candidate
@@ -79,7 +84,7 @@ struct CurveGraph: View {
                     let xNorm = Double(i) / Double(samples)
                     let lux = pow(10, xNorm * axisMaxLog) - 1
                     let raw = CurveEngine.brightness(forLux: lux, nodes: nodes) ?? 0
-                    let b = min(maxBrightness, max(minBrightness, raw))
+                    let b = min(maxBrightness, max(minBrightness, raw * brightnessFactor))
                     let pt = point(lux: lux, brightness: b, in: rect)
                     if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
                 }
@@ -90,7 +95,7 @@ struct CurveGraph: View {
 
     private func nodeDots(in rect: CGRect) -> some View {
         ForEach(nodes) { node in
-            let pt = point(lux: node.lux, brightness: node.brightness, in: rect)
+            let pt = point(lux: node.lux, brightness: node.brightness * brightnessFactor, in: rect)
             Circle()
                 .fill(Color.accentColor)
                 .frame(width: 6, height: 6)

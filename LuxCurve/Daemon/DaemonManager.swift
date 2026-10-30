@@ -6,7 +6,9 @@
 //    1. reads raw lux,
 //    2. smooths it with an EMA in log-lux space,
 //    3. asks CurveEngine for the target brightness,
-//    4. applies it — but only if it moved more than a deadband (avoids churn),
+//    4. applies it — but only if it moved more than a deadband away from the
+//       value we last wrote (avoids churn, and leaves a small manual change
+//       below the nudge threshold in place instead of reverting it),
 //    5. watches for the user manually changing brightness; when they do, it
 //       defers to them at that lighting and — once they *settle* on a value —
 //       reports it as a "nudge" so AppModel can learn a calibration point.
@@ -21,10 +23,16 @@
 //     until it has held steady for `settleTicks`, then records it once. A brief
 //     change the user immediately corrects never settles, so it does not affect
 //     the curve.
-//   * Learned points are tagged `.learned` and can't overwrite a deliberate
-//     wizard `.explicit` point (see CalibrationCurve.upsert).
-//   * The override ends when the lighting changes by more than
+//   * Learned points are tagged `.learned`. The newest point at a lighting wins
+//     and older contradicting points are dropped (see CalibrationCurve.upsert),
+//     so the updated curve reproduces the value the user settled on.
+//   * Override lighting comes from a short median of raw readings, not the slow
+//     EMA, so an adjustment made right after the room changes is recorded at
+//     the new lighting.
+//   * Once learned, the override ends when the lighting changes by more than
 //     `overrideExitLogDelta`, handing control back to the (now-updated) curve.
+//     The user's value becomes the reference for the next apply, so the curve
+//     takes over from where the user left the screen.
 //
 //  Applied brightness is ramped over a short eased fade rather than set in a
 //  single jump, so transitions read as gentle rather than snapping.
@@ -68,6 +76,12 @@ final class DaemonManager: ObservableObject {
     private var ema: EMAFilter
     private var config: AppConfig
 
+    /// Short median of recent log-lux readings (~7.5 s). The EMA drives the curve
+    /// and lags on purpose; manual overrides use this instead, so an adjustment
+    /// made just after the room changes is learned at the new lighting, and the
+    /// EMA catching up afterward does not end the override.
+    private var recentLogLux = MedianWindow(capacity: 5)
+
     /// The warmth value WE last wrote, or nil if we have never touched the display
     /// color temperature this session. Lets us return to neutral only when we were
     /// the ones who changed it.
@@ -95,11 +109,20 @@ final class DaemonManager: ObservableObject {
     /// them at this lighting and learn the value once they settle on it.
     private struct Override {
         var value: Double      // brightness the user is currently holding
-        var lux: Double        // smoothed lux when the override began
+        var lux: Double        // current lux (short median) the value applies to
         var stableTicks: Int   // consecutive ticks the value has held steady
         var learned: Bool      // whether we've already recorded a point for it
     }
-    private var manualOverride: Override?
+    private var manualOverride: Override? {
+        didSet {
+            let holding = manualOverride != nil
+            if isHoldingAdjustment != holding { isHoldingAdjustment = holding }
+        }
+    }
+
+    /// True while a manual brightness change is being held at the current
+    /// lighting (the curve is not applied until the lighting changes).
+    @Published private(set) var isHoldingAdjustment: Bool = false
 
     /// Deadbands and learning policy.
     private let applyDeadband = 0.01      // don't bother writing sub-1% changes
@@ -144,9 +167,38 @@ final class DaemonManager: ObservableObject {
                 MainActor.assumeIsolated {
                     // Lighting may differ significantly after sleep, so reset the
                     // EMA and apply the current reading instead of easing from the
-                    // pre-sleep value.
+                    // pre-sleep value. Any override belonged to the pre-sleep
+                    // lighting, and the system may have restored a different
+                    // brightness on wake, which must not be read as a manual change.
                     self?.ema.reset()
+                    self?.recentLogLux.reset()
+                    self?.manualOverride = nil
+                    self?.lastAppliedBrightness = nil
+                    self?.ignoreNextDelta = true
                     self?.reassert()
+                    // Resume polling if the display-sleep handler paused it.
+                    if let self, self.isRunning, self.timer == nil { self.scheduleTimer() }
+                }
+            }
+        )
+        // While the display is asleep there is nothing to adjust, and its reported
+        // brightness can't be trusted, so stop polling until it wakes.
+        lifecycleObservers.append(
+            ws.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.pauseTimer()
+                }
+            }
+        )
+        lifecycleObservers.append(
+            ws.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, self.isRunning, self.timer == nil else { return }
+                    // The first reading after wake is not compared against our
+                    // last write; a held manual adjustment is kept.
+                    self.ignoreNextDelta = true
+                    self.tick()
+                    self.scheduleTimer()
                 }
             }
         )
@@ -188,14 +240,33 @@ final class DaemonManager: ObservableObject {
         guard timer == nil else { return }
         isRunning = true
         tick() // apply immediately so there's no visible lag on enable
+        scheduleTimer()
+    }
+
+    private func scheduleTimer() {
         let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             // Added to RunLoop.main below, so this fires on the main actor.
             MainActor.assumeIsolated {
                 self?.tick()
             }
         }
+        // Allow the system to coalesce this wakeup with others to save power.
+        t.tolerance = 0.3
         RunLoop.main.add(t, forMode: .common)
         timer = t
+    }
+
+    /// Stop the tick and any fade without leaving the running state, so the
+    /// display-wake handler can resume where it left off.
+    private func pauseTimer() {
+        timer?.invalidate()
+        timer = nil
+        if rampTimer != nil {
+            // The fade never reached the value we claimed as written.
+            rampTimer?.invalidate()
+            rampTimer = nil
+            lastAppliedBrightness = nil
+        }
     }
 
     func stop() {
@@ -205,6 +276,9 @@ final class DaemonManager: ObservableObject {
         rampTimer = nil
         isRunning = false
         manualOverride = nil
+        // Brightness may change while stopped; don't compare against a stale
+        // write (and mistake it for a manual change) when restarted.
+        lastAppliedBrightness = nil
         restoreNeutralWarmth()
     }
 
@@ -238,6 +312,9 @@ final class DaemonManager: ObservableObject {
     func resume() {
         isSuspended = false
         ignoreNextDelta = true
+        // The wizard drove brightness directly; re-apply the curve from the
+        // screen's current value rather than our pre-wizard write.
+        lastAppliedBrightness = nil
         // The wizard may have driven warmth directly while suspended, so forget
         // our last applied value to force a fresh write on the next reconcile.
         lastAppliedWarmth = nil
@@ -253,9 +330,12 @@ final class DaemonManager: ObservableObject {
         sensorAvailable = true
         rawLux = lux
 
-        let smoothedLog = ema.update(CurveEngine.logLux(lux))
+        let logLux = CurveEngine.logLux(lux)
+        let smoothedLog = ema.update(logLux)
         let smoothed = pow(10, smoothedLog) - 1
         smoothedLux = smoothed
+        recentLogLux.push(logLux)
+        let currentLux = pow(10, recentLogLux.median ?? logLux) - 1
 
         let actual = brightness.current() ?? lastAppliedBrightness ?? 0
         actualBrightness = actual
@@ -263,9 +343,8 @@ final class DaemonManager: ObservableObject {
         // While the wizard is calibrating, surface the target for its graph but
         // don't apply it or learn from the live preview.
         if isSuspended {
-            if let rawTarget = CurveEngine.brightness(forLux: smoothed,
-                                                      nodes: config.curve.nodes) {
-                targetBrightness = min(config.maxBrightness, max(config.minBrightness, rawTarget))
+            if let target = curveTarget(forLux: smoothed) {
+                targetBrightness = target
             }
             return
         }
@@ -282,7 +361,7 @@ final class DaemonManager: ObservableObject {
         // override, so reconcile it every tick.
         reconcileWarmth(atLux: smoothed)
 
-        updateManualOverride(actual: actual, atLux: smoothed)
+        updateManualOverride(actual: actual, atLux: currentLux)
 
         // While the user holds a manual override, defer to their value entirely —
         // don't apply the curve at this lighting.
@@ -291,22 +370,32 @@ final class DaemonManager: ObservableObject {
             return
         }
 
-        guard let rawTarget = CurveEngine.brightness(forLux: smoothed,
-                                                     nodes: config.curve.nodes) else {
+        guard let target = curveTarget(forLux: smoothed) else {
             // No calibration yet -> never touch the user's brightness.
             targetBrightness = actual
             return
         }
-        // Apply the global brightness scale and the optional time-of-day dimming
-        // on top of the curve, then clamp to the safety rails.
-        let circadian = config.circadianEnabled ? Circadian.scale(for: Date()) : 1.0
-        let scaled = rawTarget * config.brightnessScale * circadian
-        let target = min(config.maxBrightness, max(config.minBrightness, scaled))
         targetBrightness = target
 
-        if config.enabled, abs(target - actual) > applyDeadband {
+        // Re-apply only when the target moved away from what we last wrote. A
+        // manual change too small to start an override is left in place rather
+        // than reverted on the next tick. With no prior write, compare against
+        // the screen itself.
+        let reference = lastAppliedBrightness ?? actual
+        if config.enabled, abs(target - reference) > applyDeadband {
             applyRamped(from: actual, to: target)
+        } else if lastAppliedBrightness == nil {
+            lastAppliedBrightness = actual
         }
+    }
+
+    /// The brightness the curve calls for at `lux`: the curve value times the
+    /// overall scale and any time-of-day dimming, clamped to the safety rails.
+    /// nil when no points are calibrated.
+    private func curveTarget(forLux lux: Double) -> Double? {
+        guard let raw = CurveEngine.brightness(forLux: lux, nodes: config.curve.nodes) else { return nil }
+        let scaled = raw * config.brightnessFactor()
+        return min(config.maxBrightness, max(config.minBrightness, scaled))
     }
 
     /// Ease brightness from `start` to `target` over a short fade instead of a
@@ -376,11 +465,20 @@ final class DaemonManager: ObservableObject {
         }
 
         if var ov = manualOverride {
-            // Lighting moved enough -> hand control back to the curve.
-            if abs(CurveEngine.logLux(lux) - CurveEngine.logLux(ov.lux)) > overrideExitLogDelta {
+            // Once the value has been learned, lighting that moves enough hands
+            // control back to the curve.
+            if ov.learned, abs(CurveEngine.logLux(lux) - CurveEngine.logLux(ov.lux)) > overrideExitLogDelta {
                 manualOverride = nil
+                // Treat the user's value as our last write, so the curve moves on
+                // from it and an unchanged screen isn't flagged as a new override.
+                lastAppliedBrightness = actual
                 return
             }
+            // Until then, the value belongs to the lighting as it is now. This
+            // covers an adjustment made just after the room changed, while the
+            // lux estimate is still catching up.
+            if !ov.learned { ov.lux = lux }
+
             if abs(actual - ov.value) > settleEpsilon {
                 // Still adjusting: follow the new value and restart the settle timer.
                 ov.value = actual

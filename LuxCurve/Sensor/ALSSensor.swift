@@ -17,9 +17,4 @@ final class ALSSensor {
         let lux = LCReadAmbientLux(&ok)
         return ok ? lux : nil
     }
-
-    /// Whether this machine exposes a readable ambient light sensor.
-    var isAvailable: Bool {
-        currentLux() != nil
-    }
 }

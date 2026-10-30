@@ -17,26 +17,34 @@ struct CalibrationCurve: Codable, Equatable {
 
     var isEmpty: Bool { nodes.isEmpty }
 
-    /// Insert a node, replacing a same-kind point captured at nearly the same lux
-    /// (so re-calibrating or re-adjusting the same lighting updates that point
-    /// instead of piling up duplicates). Tolerance is relative because lux spans a
-    /// huge range.
+    /// Insert a node as the user's current preference at its lighting. The most
+    /// recent point wins, whether it came from the wizard (`.explicit`) or from a
+    /// settled manual adjustment (`.learned`):
     ///
-    /// Trust ordering:
-    ///  - An `.explicit` point (deliberate wizard calibration) is authoritative: it
-    ///    replaces any nearby point, learned or explicit.
-    ///  - A `.learned` point (a settled manual adjustment) is collected as its own
-    ///    data point. It updates a nearby *learned* point but is kept alongside a
-    ///    nearby `.explicit` one — it never overwrites a deliberate calibration.
-    mutating func upsert(_ node: CalibrationNode) {
+    ///  - A point captured at nearly the same lux is replaced, so re-calibrating
+    ///    or re-adjusting the same lighting updates that point instead of piling up
+    ///    duplicates. Tolerance is relative because lux spans a huge range.
+    ///  - A point that contradicts the new one in the curve's direction is
+    ///    removed. For brightness (`risesWithLux` true) that is a brighter point at
+    ///    lower lux or a dimmer point at higher lux; warmth runs the other way.
+    ///    Without this, CurveEngine's monotonic fit would pull the new point
+    ///    toward the older ones and the curve would not reproduce what the user
+    ///    just chose.
+    ///
+    /// If the stored points were in order before the insert, they still are after.
+    mutating func upsert(_ node: CalibrationNode, risesWithLux: Bool = true) {
         let tolerance = max(1.0, node.lux * 0.10)
         func nearby(_ other: CalibrationNode) -> Bool { abs(other.lux - node.lux) <= tolerance }
-
-        if node.source == .explicit {
-            nodes.removeAll(where: nearby)
-        } else {
-            nodes.removeAll { nearby($0) && $0.source == .learned }
+        func conflicts(_ other: CalibrationNode) -> Bool {
+            let lower = other.lux < node.lux
+            let higherValue = other.brightness > node.brightness
+            let lowerValue = other.brightness < node.brightness
+            return risesWithLux
+                ? (lower && higherValue) || (!lower && lowerValue)
+                : (lower && lowerValue) || (!lower && higherValue)
         }
+
+        nodes.removeAll { nearby($0) || conflicts($0) }
         nodes.append(node)
         nodes.sort { $0.lux < $1.lux }
     }

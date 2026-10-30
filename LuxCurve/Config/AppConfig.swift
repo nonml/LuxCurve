@@ -12,8 +12,13 @@
 import Foundation
 
 struct AppConfig: Codable, Equatable {
-    /// Schema version, so future migrations can detect old files.
-    var version: Int = 4
+    /// The schema version this build reads and writes.
+    static let currentVersion = 4
+
+    /// Schema version, so future migrations can detect old files. Holds the
+    /// file's version after decoding; ConfigManager raises it to
+    /// `currentVersion` once loaded.
+    var version: Int = AppConfig.currentVersion
 
     /// Master on/off for adaptive brightness.
     var enabled: Bool = true
@@ -51,6 +56,13 @@ struct AppConfig: Codable, Equatable {
     static let `default` = AppConfig()
 
     init() {}
+
+    /// The multiplier applied on top of the curve at `date`: the overall scale
+    /// times any time-of-day dimming. Stored points are baseline values; the
+    /// screen shows `point × factor`, clamped to the brightness limits.
+    func brightnessFactor(at date: Date = Date()) -> Double {
+        brightnessScale * (circadianEnabled ? Circadian.scale(for: date) : 1.0)
+    }
 
     enum CodingKeys: String, CodingKey {
         case version, enabled, emaAlpha, minBrightness, maxBrightness, curve

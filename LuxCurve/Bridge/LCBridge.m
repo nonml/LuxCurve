@@ -42,35 +42,60 @@ extern int DisplayServicesCanChangeBrightness(CGDirectDisplayID display);
 
 #pragma mark - Public bridge functions
 
-double LCReadAmbientLux(bool *ok) {
-    if (ok) { *ok = false; }
+// The event-system client and the sensor's service are looked up once and kept,
+// rather than re-created on every poll. They are only touched from the main
+// thread (DaemonManager's tick). If the cached service stops returning events
+// (for example after sleep), it is released and looked up again.
+static IOHIDEventSystemClientRef sALSClient = NULL;
+static IOHIDServiceClientRef sALSService = NULL;
 
-    IOHIDEventSystemClientRef client = IOHIDEventSystemClientCreate(kCFAllocatorDefault);
-    if (!client) { return 0.0; }
+static void LCReleaseALSService(void) {
+    if (sALSService) { CFRelease(sALSService); sALSService = NULL; }
+    if (sALSClient) { CFRelease(sALSClient); sALSClient = NULL; }
+}
+
+/// Find the first matching service that returns an ALS event and cache it.
+static void LCFindALSService(void) {
+    sALSClient = IOHIDEventSystemClientCreate(kCFAllocatorDefault);
+    if (!sALSClient) { return; }
 
     NSDictionary *match = @{ @"PrimaryUsagePage": @(0xff00), @"PrimaryUsage": @(4) };
-    IOHIDEventSystemClientSetMatching(client, (__bridge CFDictionaryRef)match);
-    CFArrayRef services = IOHIDEventSystemClientCopyServices(client);
-
-    double lux = 0.0;
+    IOHIDEventSystemClientSetMatching(sALSClient, (__bridge CFDictionaryRef)match);
+    CFArrayRef services = IOHIDEventSystemClientCopyServices(sALSClient);
     if (services) {
         long count = CFArrayGetCount(services);
         for (long i = 0; i < count; i++) {
             IOHIDServiceClientRef service = (IOHIDServiceClientRef)CFArrayGetValueAtIndex(services, i);
             IOHIDEventRef event = IOHIDServiceClientCopyEvent(service, kLCEventTypeALS, 0, 0);
             if (event) {
-                lux = IOHIDEventGetFloatValue(event, kLCALSField);
-                if (ok) { *ok = true; }
                 CFRelease(event);
+                sALSService = (IOHIDServiceClientRef)CFRetain(service);
                 break;
             }
         }
         CFRelease(services);
     }
-    CFRelease(client);
+    if (!sALSService) { LCReleaseALSService(); }
+}
 
-    if (lux < 0.0) { lux = 0.0; }
-    return lux;
+double LCReadAmbientLux(bool *ok) {
+    if (ok) { *ok = false; }
+
+    // Second attempt runs only if the cached service returned no event.
+    for (int attempt = 0; attempt < 2; attempt++) {
+        if (!sALSService) { LCFindALSService(); }
+        if (!sALSService) { return 0.0; }
+
+        IOHIDEventRef event = IOHIDServiceClientCopyEvent(sALSService, kLCEventTypeALS, 0, 0);
+        if (event) {
+            double lux = IOHIDEventGetFloatValue(event, kLCALSField);
+            CFRelease(event);
+            if (ok) { *ok = true; }
+            return lux < 0.0 ? 0.0 : lux;
+        }
+        LCReleaseALSService();
+    }
+    return 0.0;
 }
 
 bool LCCanChangeBrightness(void) {

@@ -61,7 +61,8 @@ Driven by a 1.5 s main-runloop `Timer` (the manager is `@MainActor`). Each tick:
 
 On wake from sleep and on display reconfiguration, the daemon re-applies the curve
 and re-seeds the EMA, so a large change in lighting after the lid opens is applied
-promptly. When the built-in display is unreachable (clamshell or external-only
+promptly. While the display is asleep the loop stops polling and resumes when
+it wakes. When the built-in display is unreachable (clamshell or external-only
 configurations), the daemon pauses.
 
 ## Learning from a manual adjustment
@@ -72,14 +73,29 @@ current lighting (unless "Learn from manual adjustments" is turned off in Settin
 - **Debounce** — LuxCurve waits for the value to settle (about 3 s) and records it
   once, *after* the user stops adjusting, rather than recording each intermediate
   value while a key is held.
+- **Current lighting** — the point is recorded at the median of the last few raw
+  readings (about 7.5 s), not the slow EMA that drives the curve. An adjustment
+  made right after the room changes is therefore recorded at the new lighting
+  rather than the lighting the EMA still reports.
 - **Normalization** — the applied brightness includes the overall scale and any
-  circadian dimming, so those are divided out before storing; the curve stays a
-  clean baseline lux→brightness mapping that, re-scaled, reproduces the user's choice.
+  circadian dimming (`AppConfig.brightnessFactor`), so those are divided out before
+  storing. The same applies to a point saved from the calibration window. The curve
+  stays a clean baseline lux→brightness mapping that, re-scaled, reproduces the
+  user's choice, and the calibration graph plots values on the re-scaled (on-screen)
+  basis.
+- **Most recent wins** — a new point, from the calibration window or a settled
+  adjustment, replaces any point captured at nearly the same lux. It also removes
+  older points that contradict it: for brightness, a brighter point at lower lux or
+  a dimmer point at higher lux (warmth runs the other way). The stored curve
+  therefore stays in order, and the updated curve reproduces the value the user
+  chose at that lighting.
 - **Provenance** — points are tagged `.explicit` (calibration window) or `.learned`
-  (a settled adjustment). A learned point is collected as its *own* data point
-  alongside nearby explicit ones — it updates a nearby learned point but never
-  overwrites a deliberate `.explicit` calibration. Individual points are viewable
-  and deletable in the calibration-points window.
+  (a settled adjustment) for display. Individual points are viewable and deletable
+  in the calibration-points window.
+
+A manual change smaller than the nudge threshold does not start an override, but
+it is also not reverted: the curve is re-applied only when its target moves away
+from the value LuxCurve last wrote.
 
 ## The math (`CurveEngine`)
 
@@ -90,7 +106,11 @@ current lighting (unless "Learn from manual adjustments" is turned off in Settin
   producing a smooth curve with no overshoot between points and a non-decreasing
   result. `brightness(forLux:nodes:)` and `warmth(forLux:nodes:)` are thin wrappers
   over it.
-- Guarantees **monotonicity**: brightness never decreases as lux increases.
+- Guarantees **monotonicity**: brightness never decreases as lux increases. If the
+  stored points are out of order (for example, a curve saved by an earlier
+  version), each run of conflicting points is replaced by its mean
+  (pool-adjacent-violators isotonic regression), so a dimmer point is not simply
+  raised to the value of a brighter point at lower lux.
 - Below the lowest and above the highest calibrated lux, it holds the endpoint value.
 
 ## Adaptive warmth (color temperature)
