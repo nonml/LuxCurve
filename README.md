@@ -15,7 +15,7 @@ warmth — to each ambient light level.
 
 *The guided calibration window (left) and the menu-bar item (right), shown at their relative sizes.*
 
-> Status: **v0.1 — built-in display.** Adapts both brightness and color warmth on
+> Status: **v0.2 — built-in display.** Adapts both brightness and color warmth on
 > the built-in display, with a guided calibration window, a Settings window, and
 > launch at login. External-display (DDC) support is the main open contribution —
 > see [`ARCHITECTURE.md`](ARCHITECTURE.md#future-work).
